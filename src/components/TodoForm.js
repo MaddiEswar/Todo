@@ -1,92 +1,42 @@
-// src/components/TodoForm.js
-import React, { useState } from "react";
-import axios from "axios";
-import { useMutation, useQueryClient } from "react-query";
-import styles from "./TodoForm.module.css";
+import { useTodos } from "../hooks/useTodos";
+import { Form, Input, Button, Select } from "antd";
 
-const API_URL = "http://62.72.12.81:3108/items/Todos";
-const TOKEN = "MjnYFeSY2BKzrdKMbWuQYbNLiCqAPRmo";
 
 function TodoForm() {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [status, setStatus] = useState("draft");
+  const { addTodo } = useTodos();
 
-  const queryClient = useQueryClient();
+  const [form] = Form.useForm();
 
-  const mutation = useMutation(
-    async (newTodo) => {
-      return await axios.post(API_URL, newTodo, {
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-        },
-      });
-    },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries("todos"); // refresh todos after adding
-        setTitle("");
-        setDescription("");
-        setIsCompleted(false);
-        setStatus("draft");
-      },
-    }
-  );
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    mutation.mutate({
-      title,
-      description,
-      is_completed: isCompleted,
-      status,
+  const onFinish = (values) => {
+    addTodo({
+      title: values.title,
+      description: values.description,
+      status: values.status,
+      is_completed: false,
     });
+    form.resetFields();
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.formContainer}>
-      <div className={styles.formGroup}>
-        <label>Status</label>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
-        </select>
-      </div>
-
-      <div className={styles.formGroup}>
-        <label>Title</label>
-        <input
-          type="text"
-          placeholder="Enter task title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-      </div>
-
-      <div className={styles.formGroup}>
-        <label>Description</label>
-        <textarea
-          placeholder="Enter task description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
-
-      <div className={styles.checkboxGroup}>
-        <input
-          type="checkbox"
-          checked={isCompleted}
-          onChange={(e) => setIsCompleted(e.target.checked)}
-        />
-        <label>Is Completed</label>
-      </div>
-
-      <button type="submit" className={styles.submitButton}>
-        Add Todo
-      </button>
-    </form>
+    <Form form={form} layout="vertical" onFinish={onFinish} style={{ maxWidth: 500, background: "#fff", padding: 20, borderRadius: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+      <Form.Item label="Status" name="status" initialValue="draft" > 
+        <Select>
+          <Select.Option value="draft">Draft</Select.Option>
+          <Select.Option value="published">Published</Select.Option>
+        </Select>
+      </Form.Item>
+      <Form.Item label="Title" name="title"> 
+        <Input placeholder="Enter task title" />
+      </Form.Item>
+      <Form.Item label="Description" name="description"> 
+        <Input.TextArea placeholder="Enter task description" />
+      </Form.Item>
+      <Form.Item>
+        <Button type="primary" htmlType="submit" block>
+          Add Todo
+        </Button>
+      </Form.Item>
+    </Form>
   );
 }
 

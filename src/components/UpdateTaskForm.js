@@ -1,91 +1,47 @@
-import React, { useState } from "react";
-import axios from "axios";
-import styles from "./UpdateTaskForm.module.css"; // import module CSS
+import { useEffect } from "react";
+import { Form, Input, Select, Checkbox, Button, Modal } from "antd";
 
-const BASE_URL = "http://62.72.12.81:3108/items/Todos";
-const TOKEN = "MjnYFeSY2BKzrdKMbWuQYbNLiCqAPRmo";
 
-const UpdateTaskForm = ({ task, onClose, refetch }) => {
-  const [updatedTask, setUpdatedTask] = useState({
-    status: task.status || "draft",
-    title: task.title || "",
-    description: task.description || "",
-    is_completed: task.is_completed || false,
-  });
+const UpdateTaskForm = ({ task, onClose, onUpdate }) => {
+  const [form] = Form.useForm();
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setUpdatedTask((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
+  useEffect(() => {
+    form.setFieldsValue({
+      status: task.status || "draft",
+      title: task.title || "",
+      description: task.description || "",
+      is_completed: task.is_completed || false,
+    });
+  }, [task, form]);
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.patch(`${BASE_URL}/${task.id}`, updatedTask, {
-        headers: { Authorization: `Bearer ${TOKEN}` },
-      });
-      refetch();
-      onClose();
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
+  const onFinish = (values) => {
+    onUpdate({ ...values, id: task.id });
   };
 
   return (
-    <form onSubmit={handleUpdate} className={styles.formContainer}>
-      <h2 className={styles.formTitle}>Update Task</h2>
-
-      <div className={styles.formRow}>
-        <label>Status:</label>
-        <select
-          name="status"
-          value={updatedTask.status}
-          onChange={handleChange}
-        >
-          <option value="draft">Draft</option>
-          <option value="publish">Publish</option>
-        </select>
-      </div>
-
-      <div className={styles.formRow}>
-        <label>Title:</label>
-        <input
-          type="text"
-          name="title"
-          value={updatedTask.title}
-          onChange={handleChange}
-          placeholder="Title"
-        />
-      </div>
-
-      <div className={styles.formRow}>
-        <label>Description:</label>
-        <textarea
-          name="description"
-          value={updatedTask.description}
-          onChange={handleChange}
-          placeholder="Description"
-        />
-      </div>
-
-      <div className={`${styles.formRow} ${styles.checkboxRow}`}>
-        <label>Completed:</label>
-        <input
-          type="checkbox"
-          name="is_completed"
-          checked={updatedTask.is_completed}
-          onChange={handleChange}
-        />
-      </div>
-
-      <div className={styles.formButtons}>
-        <button type="submit" className={styles.saveButton}>Save</button>
-        <button type="button" className={styles.cancelButton} onClick={onClose}>Cancel</button>
-      </div>
-    </form>
+    <Modal open={true} onCancel={onClose} footer={null} title="Update Task">
+      <Form form={form} layout="vertical" onFinish={onFinish}>
+        <Form.Item label="Status" name="status"> 
+          <Select>
+            <Select.Option value="draft">Draft</Select.Option>
+            <Select.Option value="published">Published</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item label="Title" name="title"> 
+          <Input placeholder="Title" />
+        </Form.Item>
+        <Form.Item label="Description" name="description"> 
+          <Input.TextArea placeholder="Description" />
+        </Form.Item>
+        <Form.Item name="is_completed" valuePropName="checked">
+          <Checkbox>Completed</Checkbox>
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" style={{ marginRight: 8 }}>Update</Button>
+          <Button onClick={onClose}>Cancel</Button>
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 };
 

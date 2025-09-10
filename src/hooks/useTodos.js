@@ -1,54 +1,45 @@
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import directus from "../api/directus";
+import axios from "axios";
 
-// Fetch Todos
-const fetchTodos = async () => {
-  const { data } = await directus.get("/items/Todos"); 
-  return data.data; 
-};
+const API_URL = "http://62.72.12.81:3108";
+const TOKEN = process.env.REACT_APP_DIRECTUS_TOKEN;
 
-// Add Todo
-const addTodo = async (todo) => {
-  const { data } = await directus.post("/items/Todos", todo);
-  return data.data;
-};
+const directus = axios.create({
+  baseURL: API_URL,
+  headers: {
+    Authorization: `Bearer ${TOKEN}`,
+  },
+});
 
-// Update Todo
-const updateTodo = async ({ id, updates }) => {
-  const { data } = await directus.patch(`/items/Todos/${id}`, updates);
-  return data.data;
-};
-
-
-// Delete Todo
-const deleteTodo = async (id) => {
-  await directus.delete(`/items/Todos/${id}`);
-  return id;
-};
-
-export function useTodos() {
+export const useTodos = () => {
   const queryClient = useQueryClient();
 
-  const { data: todos, isLoading, error } = useQuery("todos", fetchTodos);
-
-  const addMutation = useMutation(addTodo, {
-    onSuccess: () => queryClient.invalidateQueries("todos"),
+  const { data: todos, isLoading, error } = useQuery("todos", async () => {
+    const { data } = await directus.get("/items/Todos");
+    return data.data;
   });
 
-  const updateMutation = useMutation(updateTodo, {
-    onSuccess: () => queryClient.invalidateQueries("todos"),
-  });
+  const addTodo = useMutation(
+    async (todo) => (await directus.post("/items/Todos", todo)).data.data,
+    { onSuccess: () => queryClient.invalidateQueries("todos") }
+  );
 
-  const deleteMutation = useMutation(deleteTodo, {
-    onSuccess: () => queryClient.invalidateQueries("todos"),
-  });
+  const updateTodo = useMutation(
+    async ({ id, updates }) => (await directus.patch(`/items/Todos/${id}`, updates)).data.data,
+    { onSuccess: () => queryClient.invalidateQueries("todos") }
+  );
+
+  const deleteTodo = useMutation(
+    async (id) => { await directus.delete(`/items/Todos/${id}`);  },
+    { onSuccess: () => queryClient.invalidateQueries("todos") }
+  );
 
   return {
     todos,
     isLoading,
     error,
-    addTodo: addMutation.mutate,
-    updateTodo: updateMutation.mutate,
-    deleteTodo: deleteMutation.mutate,
+    addTodo: addTodo.mutate,
+    updateTodo: updateTodo.mutate,
+    deleteTodo: deleteTodo.mutate,
   };
-}
+};
